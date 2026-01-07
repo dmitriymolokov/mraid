@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TITLE_FILE="title.txt"
+BODY_FILE="body.txt"
+LOGO_FILE="logo.png"
+BANNER_FILE="banner.png"
+OUT_FILE="creative.html"
+
+# Проверяем наличие файлов
+for f in "$TITLE_FILE" "$BODY_FILE" "$LOGO_FILE" "$BANNER_FILE"; do
+  if [[ ! -f "$f" ]]; then
+    echo "Нет файла: $f"
+    exit 1
+  fi
+done
+
+# Читаем текст
+TITLE=$(cat "$TITLE_FILE")
+BODY=$(cat "$BODY_FILE")
+
+# Кодируем картинки в base64 (поддержка macOS/Linux)
+if base64 --help 2>&1 | grep -q -- "-w"; then
+  # GNU coreutils (Linux, Git Bash)
+  LOGO_B64=$(base64 -w0 "$LOGO_FILE")
+  BANNER_B64=$(base64 -w0 "$BANNER_FILE")
+else
+  # BSD base64 (macOS)
+  LOGO_B64=$(base64 < "$LOGO_FILE" | tr -d '\n')
+  BANNER_B64=$(base64 < "$BANNER_FILE" | tr -d '\n')
+fi
+
+# Генерируем итоговый HTML
+cat > "$OUT_FILE" <<EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>$TITLE</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+    body{background:#f8f8f8;color:#333;line-height:1.6;padding-bottom:80px}
+    .app-icon,.story-cover{width:100%;max-width:500px;margin:0 auto;overflow:hidden}
+    .app-icon{display:flex;align-items:center;justify-content:center;height:70px;background:#fff;box-shadow:0 -5px 20px rgb(179 179 179 / 60%)}
+    .app-icon img{width:40px;height:40px;border-radius:10px;box-shadow:0 0 10px rgba(219,219,219,0.7)}
+    .story-cover img{width:100%;display:block;box-shadow:0 4px 15px rgba(0,0,0,0.2)}
+    .story-header{width:100%;max-width:500px;padding:15px 20px;margin:0 auto}
+    .story-title{font-size:24px;font-weight:700;margin-bottom:5px;line-height:1.3}
+    .story-content{padding:0 20px 20px 20px;max-width:500px;margin:0 auto;border-radius:8px;white-space:pre-line}
+    .story-paragraph{margin-bottom:20px;font-size:16px;line-height:1.5}
+    .story-bottom{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:100;width:100%;pointer-events:none}
+    .chapter-button{pointer-events:auto;display:block;width:80%;max-width:460px;margin:0 auto;padding:12px 0;background:#158DFC;color:#fff;text-align:center;border-radius:50px;font-weight:600;font-size:18px;box-shadow:0 4px 8px rgba(0,0,0,0.2);transition:background-color .3s;border:none;outline:none;animation:breathe 1.5s ease-in-out infinite alternate}
+    .chapter-button:active{background:rgba(21,140,252,0.829)}
+    @keyframes breathe{0%{transform:scale(.98)}50%{transform:scale(1.02)}100%{transform:scale(.98)}}
+    @media(max-width:768px){.story-title{font-size:22px}.story-content{padding:0 15px 15px 15px}}
+    @media(max-width:480px){.story-title{font-size:20px}.story-paragraph{font-size:16px}}
+  </style>
+</head>
+<body>
+  <div class="app-icon">
+    <img src="data:image/png;base64,$LOGO_B64" alt="logo">
+  </div>
+
+  <div class="story-cover">
+    <img src="data:image/png;base64,$BANNER_B64" alt="banner">
+  </div>
+
+  <div class="story-header">
+    <h1 class="story-title">$TITLE</h1>
+  </div>
+
+  <div class="story-content">
+    <p class="story-paragraph">$BODY</p>
+  </div>
+
+  <div class="story-bottom">
+    <button class="chapter-button jump-box">Continue Reading</button>
+  </div>
+
+  <script>
+    document.querySelector('.jump-box').addEventListener('click', function () {
+      if (typeof mraid !== 'undefined' && mraid.open) mraid.open();
+    });
+  </script>
+</body>
+</html>
+EOF
+
+echo "Файл креатива успешно создан: $OUT_FILE"
+open $OUT_FILE

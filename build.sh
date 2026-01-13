@@ -60,6 +60,3 @@ printf '%s' "$TEMPLATE_CONTENT" > "$OUT_FILE"
 
 echo "✅ Файл креатива успешно создан: $OUT_FILE"
 echo ""
-echo "Открываю файл в браузере..."
-echo ""
-open $OUT_FILE
